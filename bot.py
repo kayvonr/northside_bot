@@ -259,13 +259,13 @@ class Bot(object):
         message_obj.timestamp = post_message["ts"]
 
     def handle_spotify(self, channel, message_text):
-        spotify_links = spotify_helper.extract_spotify_urls(message_text)
-        if not spotify_links:
+        spotify_track_ids = spotify_helper.extract_spotify_track_ids(message_text)
+        if not spotify_track_ids:
             msg.warn("No spotify links found after parsing: {}".format(message_text))
             return
 
-        for url in spotify_links:
-            spotify_helper.add_track_to_playlist(url, conf.SPOTIFY_TRACK_PLAYLIST_ID)
+        for track_id in spotify_track_ids:
+            spotify_helper.add_track_to_playlist(track_id, conf.SPOTIFY_TRACK_PLAYLIST_ID)
 
     def boom_roasted(self, channel, received_message_text):
         resp = self.client.api_call(

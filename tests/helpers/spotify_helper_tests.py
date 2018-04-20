@@ -15,7 +15,7 @@ class SpotifyHelperTest(unittest.TestCase):
         )
 
         for message, should_pass in messages:
-            res = spotify_helper.extract_spotify_urls(message)
+            res = spotify_helper.extract_spotify_track_ids(message)
             self.assertEqual(bool(res), should_pass, "{} failed (supposed to be {})".format(message, should_pass))
 
         # all links that should pass
@@ -30,4 +30,5 @@ class SpotifyHelperTest(unittest.TestCase):
         )
 
         for message in messages:
-            self.assertEqual(spotify_helper.extract_spotify_urls(message)[0], "https://open.spotify.com/track/1Yf8RtP4KpjyoEuTyJkMDZ")
+            parsed = spotify_helper.extract_spotify_track_ids(message)[0]
+            self.assertEqual(parsed, "1Yf8RtP4KpjyoEuTyJkMDZ", "Parsed does not match track ID: {} (Input: {})".format(parsed, message))
