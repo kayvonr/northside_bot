@@ -104,6 +104,11 @@ extra field --> "subtype" : "bot_message",
         return make_response("Not a message we care about", 200, {"X-Slack-No-Retry": 1})
 
 
+@app.route("/status", methods=["GET"])
+def status():
+    return make_response("OK", 200,)
+
+
 @app.route("/install", methods=["GET"])
 def pre_install():
     """This route renders the installation page with 'Add to Slack' button."""
@@ -176,4 +181,4 @@ def hears():
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0')

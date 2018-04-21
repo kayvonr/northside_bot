@@ -42,7 +42,6 @@ class Bot(object):
         # by passing an empty string as a token and then reinstantiating the
         # client with a valid OAuth token once we have one.
         self.client = SlackClient("")
-        self.client = SlackClient("xoxb-349975583104-PDkTPMRihrkmip9sH2sGqUuk")
         # We'll use this dictionary to store the state of each message object.
         # In a production envrionment you'll likely want to store this more
         # persistantly in  a database.
@@ -76,12 +75,10 @@ class Bot(object):
         # To keep track of authorized teams and their associated OAuth tokens,
         # we will save the team ID and bot tokens to the global
         # authed_teams object
-        team_id = auth_response["team_id"]
-        authed_teams[team_id] = {"bot_token":
-                                 auth_response["bot"]["bot_access_token"]}
+        authed_teams = {"bot_token": auth_response["bot"]["bot_access_token"]}
         # Then we'll reconnect to the Slack Client with the correct team's
         # bot token
-        self.client = SlackClient(authed_teams[team_id]["bot_token"])
+        self.client = SlackClient(authed_teams["bot_token"])
 
     def open_dm(self, user_id):
         """
