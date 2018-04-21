@@ -91,9 +91,10 @@ extra field --> "subtype" : "bot_message",
         return make_response("Not an event we care about", 200, {"X-Slack-No-Retry": 1})
 
     channel = slack_event['event']['channel']
-    message_text = slack_event['event']['text'].lower()
+    # Cannot lowercase for everything, bc track ID is case-sensitive
+    message_text = slack_event['event']['text']
 
-    if "fire it up!" in message_text:
+    if "fire it up!" in message_text.lower():
         slack_bot.boom_roasted(channel, message_text)
         return make_response("Message received", 200,)
     elif conf.SPOTIFY_BASE_URL in message_text:

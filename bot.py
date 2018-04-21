@@ -42,6 +42,7 @@ class Bot(object):
         # by passing an empty string as a token and then reinstantiating the
         # client with a valid OAuth token once we have one.
         self.client = SlackClient("")
+        self.client = SlackClient("xoxb-349975583104-PDkTPMRihrkmip9sH2sGqUuk")
         # We'll use this dictionary to store the state of each message object.
         # In a production envrionment you'll likely want to store this more
         # persistantly in  a database.
@@ -258,6 +259,15 @@ class Bot(object):
         # Update the timestamp saved on the message object
         message_obj.timestamp = post_message["ts"]
 
+    def post_message(self, channel, message_text):
+        resp = self.client.api_call(
+            "chat.postMessage",
+            channel=channel,
+            text=message_text
+        )
+
+        return resp
+
     def handle_spotify(self, channel, message_text):
         spotify_track_ids = spotify_helper.extract_spotify_track_ids(message_text)
         if not spotify_track_ids:
@@ -265,13 +275,13 @@ class Bot(object):
             return
 
         for track_id in spotify_track_ids:
-            spotify_helper.add_track_to_playlist(track_id, conf.SPOTIFY_TRACK_PLAYLIST_ID)
+            add_status, resp = spotify_helper.add_track_to_playlist(track_id, conf.SPOTIFY_TRACK_PLAYLIST_ID)
+            if not add_status:
+                self.post_message(channel, "Adding track {} failed: {}".format(track_id, resp.json()))
+            else:
+                self.post_message(channel, "Added track {} to playlist!".format(track_id))
 
     def boom_roasted(self, channel, received_message_text):
-        resp = self.client.api_call(
-                "chat.postMessage",
-                channel=channel,
-                text="BOOM ROASTED! ({})".format(received_message_text)
-                )
+        resp = self.post_message(channel, "BOOM ROASTED! ({})".format(received_message_text))
 
-        print("Response: {}".format(resp))
+        msg.debug("Response: {}".format(resp))
