@@ -41,7 +41,8 @@ class Bot(object):
         # an oauth token. We can connect to the client without authenticating
         # by passing an empty string as a token and then reinstantiating the
         # client with a valid OAuth token once we have one.
-        self.client = SlackClient("")
+        # self.client = SlackClient("")
+        self.client = SlackClient(os.environ.get("BOT_TOKEN"))
         # We'll use this dictionary to store the state of each message object.
         # In a production envrionment you'll likely want to store this more
         # persistantly in  a database.
@@ -265,18 +266,38 @@ class Bot(object):
 
         return resp
 
-    def handle_spotify(self, channel, message_text):
-        spotify_track_ids = spotify_helper.extract_spotify_track_ids(message_text)
-        if not spotify_track_ids:
-            msg.warn("No spotify links found after parsing: {}".format(message_text))
+    def spotify_tracks(self, channel, message_text):
+        self.spotify_work(channel, message_text, "track", conf.SPOTIFY_TRACK_PLAYLIST_ID, spotify_helper.extract_spotify_track_ids, spotify_helper.add_track_to_playlist)
+
+    def spotify_albums(self, channel, message_text):
+        self.spotify_work(channel, message_text, "album", conf.SPOTIFY_ALBUM_PLAYLIST_ID, spotify_helper.extract_spotify_album_ids, spotify_helper.add_album_to_playlist)
+
+    def spotify_work(self, channel, message_text, extract_type, playlist_id, extract_method, add_method):
+        spotify_ids = extract_method(message_text)
+        if not spotify_ids:
+            msg.warn("No spotify links found after parsing for {}s: {}".format(extract_type, message_text))
             return
 
-        for track_id in spotify_track_ids:
-            add_status, resp = spotify_helper.add_track_to_playlist(track_id, conf.SPOTIFY_TRACK_PLAYLIST_ID)
+        for spotify_id in spotify_ids:
+            add_status, resp = add_method(spotify_id, playlist_id)
             if not add_status:
-                self.post_message(channel, "Adding track {} failed: {}".format(track_id, resp.json()))
+                self.post_message(channel, "Adding {} {} failed: {}".format(extract_type, spotify_id, resp.json()))
             else:
-                self.post_message(channel, "Added track {} to playlist!".format(track_id))
+                self.post_message(channel, "Added {} {} to playlist!".format(extract_type, spotify_id))
+
+    def spotify_discover(self, channel, message_text):
+        pass
+
+    def handle_spotify(self, channel, message_text):
+        if "!discover!" in message_text:
+            self.spotify_discover(channel, message_text)
+            return
+
+        if spotify_helper.has_album_link(message_text):
+            self.spotify_albums(channel, message_text)
+
+        if spotify_helper.has_track_link(message_text):
+            self.spotify_tracks(channel, message_text)
 
     def boom_roasted(self, channel, received_message_text):
         resp = self.post_message(channel, "BOOM ROASTED! ({})".format(received_message_text))
