@@ -286,7 +286,7 @@ class Bot(object):
                 self.post_message(channel, "Added {} {} to playlist!".format(extract_type, spotify_id))
 
     def spotify_discover(self, channel, message_text):
-        pass
+        self.spotify_work(channel, message_text, "discover", conf.SPOTIFY_DISCOVER_PLAYLIST_ID, spotify_helper.extract_spotify_discover_id, spotify_helper.add_discover_to_playlist)
 
     def handle_spotify(self, channel, message_text):
         if "!discover!" in message_text:

@@ -10,6 +10,7 @@ import conf
 
 TRACK_URL_PATTERN = re.compile("(?P<full_url>https?://open\.spotify\.com/track/(?P<track_id>[a-zA-Z0-9]+))")
 ALBUM_URL_PATTERN = re.compile("(?P<full_url>https?://open\.spotify\.com/album/(?P<album_id>[a-zA-Z0-9]+))")
+DISCOVER_URL_PATTERN = re.compile("(?P<full_url>https?://open\.spotify\.com/user/spotify/playlist/(?P<playlist_id>[a-zA-Z0-9]+))")
 
 msg = lnk.msg
 
@@ -34,6 +35,10 @@ def extract_spotify_album_ids(message):
     return _extract_ids(message, ALBUM_URL_PATTERN)
 
 
+def extract_spotify_discover_id(message):
+    return _extract_ids(message, DISCOVER_URL_PATTERN)
+
+
 def _extract_ids(message, pattern):
     return map(
         itemgetter(1),
@@ -47,7 +52,7 @@ def _build_spotify_uri(track_id):
 
 def _get_auth_token():
     return prompt_for_user_token(
-        conf.SPOTIFY_USER_ID,
+        conf.NORTHSIDE_SPOTIFY_USER_ID,
         conf.SPOTIFY_SCOPE_NEEDED
     )
 
@@ -76,6 +81,34 @@ def get_tracks_in_album(album_id):
     return [r['id'] for r in resp.json()['items']]
 
 
+def add_discover_to_playlist(discover_playlist_id, playlist_id):
+    return add_playlist_to_playlist(conf.SPOTIFY_SYSTEM_USER_ID, discover_playlist_id, playlist_id)
+
+
+def add_playlist_to_playlist(user_id, og_playlist_id, playlist_id):
+    resp = get_tracks_in_playlist(user_id, og_playlist_id)
+    # ugh, shitty. sorry.
+    if isinstance(resp, tuple):
+        return resp
+
+    track_ids = resp
+    return add_tracks_to_playlist(track_ids, playlist_id)
+
+
+def get_tracks_in_playlist(user_id, playlist_id):
+    token = _get_auth_token()
+
+    headers = {"Authorization": "Bearer {}".format(token)}
+    url = conf.SPOTIFY_PLAYLIST_API_URL.format(user_id=user_id, playlist_id=playlist_id)
+
+    resp = requests.get(url, headers=headers)
+    if resp.status_code != 200:
+        msg.warn("Error getting track IDs for playlist: {}".format(resp.json()))
+        return False, resp
+
+    return [track['track']['id'] for track in resp.json()['items']]
+
+
 def add_track_to_playlist(track_id, playlist_id):
     return add_tracks_to_playlist([track_id], playlist_id)
 
@@ -85,7 +118,7 @@ def add_tracks_to_playlist(track_ids, playlist_id):
 
     headers = {"Authorization": "Bearer {}".format(token)}
     url = conf.SPOTIFY_ADD_TRACK_API_URL.format(
-        user_id=conf.SPOTIFY_USER_ID,
+        user_id=conf.NORTHSIDE_SPOTIFY_USER_ID,
         playlist_id=playlist_id,
     )
 
